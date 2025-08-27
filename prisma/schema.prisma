@@ -1,0 +1,57 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+
+model User {
+  id                   Int      @id @default(autoincrement())
+  name                 String
+  email                String   @unique
+  password             String
+  profileImageUrl      String
+  role                 String   @default("user") 
+  points               Int      @default(0)
+
+  orders               Order[]
+  sentTransactions     PointTransaction[] @relation("SentTransactions")
+  receivedTransactions PointTransaction[] @relation("ReceivedTransactions")
+}
+
+model Product {
+  id              Int       @id @default(autoincrement())
+  name            String
+  price           Int
+  stock           Int
+  productImageUrl String?
+  status          String    @default("active") 
+  deletedAt       DateTime?
+  
+  orders          Order[]
+}
+
+model Order {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  productId Int
+  quantity  Int
+  total     Int
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+  product   Product  @relation(fields: [productId], references: [id])
+}
+
+model PointTransaction {
+  id         Int      @id @default(autoincrement())
+  senderId   Int
+  receiverId Int
+  amount     Int
+  createdAt  DateTime @default(now())
+
+  sender     User     @relation("SentTransactions", fields: [senderId], references: [id])
+  receiver   User     @relation("ReceivedTransactions", fields: [receiverId], references: [id])
+}
