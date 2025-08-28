@@ -3,6 +3,7 @@ import { prisma } from "../connection/client";
 import bcrypt from "bcrypt";
 import { signToken } from "../utils/jwt";
 
+//register
 export const register = async (
   req: Request,
   res: Response,
@@ -53,6 +54,7 @@ export const register = async (
   }
 };
 
+//login
 export const login = async (
   req: Request,
   res: Response,
@@ -83,6 +85,33 @@ export const login = async (
     });
 
     res.json({ message: "Login berhasil", token });
+  } catch (error) {
+    next(error);
+  }
+};
+
+//Get all users
+export const getAllUsers = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const users = await prisma.user.findMany({
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        createdAt: true,
+      },
+      orderBy: { createdAt: "asc" },
+    });
+
+    res.json({
+      message: "Daftar semua user",
+      users,
+    });
   } catch (error) {
     next(error);
   }

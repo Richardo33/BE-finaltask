@@ -1,6 +1,6 @@
 import express = require("express");
 
-import { register, login } from "../controllers/authControllers";
+import { register, login, getAllUsers } from "../controllers/authControllers";
 
 import {
   createProduct,
@@ -50,6 +50,7 @@ router.post(
   register
 );
 router.post("/login", validate(loginSchema), login);
+router.get("/getAllUsers", authenticate, authorize("admin"), getAllUsers);
 
 router.post(
   "/product",
