@@ -152,7 +152,6 @@ export const getOrderSummary = async (req: Request, res: Response) => {
   const skip = (page - 1) * limit;
 
   try {
-    // Group orders by userId
     const summary = await prisma.order.groupBy({
       by: ["userId"],
       _sum: { quantity: true },

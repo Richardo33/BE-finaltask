@@ -1,25 +1,17 @@
 import { Request, Response } from "express";
 
 import { prisma } from "../connection/client";
-//Create Product
+
 //Create Product
 export const createProduct = async (req: Request, res: Response) => {
   try {
     const { name, price, stock } = req.body;
 
-    if (!name || name.length < 3) {
-      return res.status(400).json({ error: "Nama produk minimal 3 karakter" });
-    }
-    if (price < 0) {
-      return res.status(400).json({ error: "Harga tidak boleh negatif" });
-    }
-
-    // ✅ Cek apakah produk dengan nama sama sudah ada (case-insensitive)
     const existingProduct = await prisma.product.findFirst({
       where: {
         name: {
           equals: name,
-          mode: "insensitive", // tidak peduli huruf besar/kecil
+          mode: "insensitive",
         },
       },
     });
@@ -49,7 +41,7 @@ export const createProduct = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error("Create product error:", error);
-    res.status(500).json({ error: "Gagal nambah produk bre" });
+    res.status(500).json({ error: "Gagal menambahkan produk" });
   }
 };
 
@@ -59,7 +51,7 @@ export const getProducts = async (req: Request, res: Response) => {
     const {
       minPrice,
       maxPrice,
-      status, // ✅ Tambahan untuk filter status
+      status,
       sortBy = "id",
       order = "asc",
       page = "1",
@@ -73,10 +65,8 @@ export const getProducts = async (req: Request, res: Response) => {
 
     const sortOrder = order === "desc" ? "desc" : "asc";
 
-    // Filter
     const filters: any = {};
 
-    // Filter harga
     if (minPrice) filters.price = { gte: parseFloat(minPrice as string) };
     if (maxPrice)
       filters.price = {
@@ -84,19 +74,16 @@ export const getProducts = async (req: Request, res: Response) => {
         lte: parseFloat(maxPrice as string),
       };
 
-    // Filter status aktif/inaktif
     if (status === "active") {
       filters.deletedAt = null;
     } else if (status === "inactive") {
       filters.deletedAt = { not: null };
     }
 
-    // Pagination
     const take = parseInt(limit as string);
     const currentPage = parseInt(page as string);
     const skip = (currentPage - 1) * take;
 
-    // Ambil data
     const products = await prisma.product.findMany({
       where: filters,
       orderBy: { [sortField]: sortOrder },
@@ -126,18 +113,6 @@ export const updateProduct = async (req: Request, res: Response) => {
     const { id } = req.params;
     const { name, price, stock } = req.body;
 
-    // Validasi
-    if (name && name.length < 3) {
-      return res.status(400).json({ error: "Nama produk minimal 3 karakter" });
-    }
-    if (price && Number(price) < 0) {
-      return res.status(400).json({ error: "Harga tidak boleh negatif" });
-    }
-    if (stock && Number(stock) < 0) {
-      return res.status(400).json({ error: "Stock tidak boleh negatif" });
-    }
-
-    // Update productImageUrl jika ada file baru
     const productImageUrl = req.file
       ? `/uploads/products/${req.file.filename}`
       : undefined;
@@ -234,5 +209,29 @@ export const restoreProduct = async (req: Request, res: Response) => {
   } catch (error) {
     console.error("Restore error:", error);
     res.status(500).json({ success: false, message: "Gagal merestore produk" });
+  }
+};
+
+// Hard delete product
+export const hardDeleteProduct = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    const product = await prisma.product.findUnique({
+      where: { id: Number(id) },
+    });
+
+    if (!product) {
+      return res.status(404).json({ error: "Produk tidak ditemukan" });
+    }
+
+    await prisma.product.delete({
+      where: { id: Number(id) },
+    });
+
+    res.status(200).json({ message: "Produk berhasil dihapus permanen" });
+  } catch (error: any) {
+    console.error("Hard delete error:", error);
+    res.status(500).json({ error: "Gagal menghapus produk" });
   }
 };
